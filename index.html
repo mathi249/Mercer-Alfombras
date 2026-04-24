@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mercer — Gestión de Inventario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F4EF;
+  --surface:#FFFFFF;
+  --surface2:#F0EBE3;
+  --border:#DDD5C8;
+  --border2:#C9BEB0;
+  --txt:#1A1714;
+  --txt2:#6B5E52;
+  --txt3:#9C8E82;
+  --gold:#8B6914;
+  --gold-light:#C49A28;
+  --gold-bg:#FDF6E7;
+  --green:#2D5016;
+  --green-bg:#EBF4E0;
+  --amber:#7A4A08;
+  --amber-bg:#FEF3E2;
+  --blue:#1A4A7A;
+  --blue-bg:#E8F0FA;
+  --red:#7A1A1A;
+  --red-bg:#FAE8E8;
+  --r:8px;--rl:12px;--rxl:16px;
+  --shadow:0 1px 3px rgba(0,0,0,.08);
+  --shadow-md:0 4px 12px rgba(0,0,0,.1);
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--txt);
+  font-size:14px;
+  line-height:1.5;
+  min-height:100vh;
+}
+.serif{font-family:'Cormorant Garamond',serif}
+h1,h2,h3{font-family:'Cormorant Garamond',serif}
+
+/* ── LAYOUT ── */
+.app{max-width:1200px;margin:0 auto;padding:0 0 4rem}
+.topbar{
+  background:var(--txt);
+  color:#F7F4EF;
+  padding:1rem 1.5rem;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.brand{display:flex;align-items:baseline;gap:12px}
+.brand h1{font-size:22px;font-weight:300;letter-spacing:0.15em;color:#F7F4EF}
+.brand-sub{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#9C8E82;font-weight:300}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+
+/* ── BUTTONS ── */
+.btn{
+  font-family:'DM Sans',sans-serif;
+  font-size:13px;font-weight:500;
+  padding:8px 16px;border-radius:var(--r);
+  border:1px solid transparent;cursor:pointer;
+  transition:all .15s;line-height:1;
+  white-space:nowrap;
+}
+.btn-primary{background:var(--gold);color:#fff;border-color:var(--gold)}
+.btn-primary:hover{background:var(--gold-light);border-color:var(--gold-light)}
+.btn-outline{background:transparent;color:var(--txt2);border-color:var(--border2)}
+.btn-outline:hover{background:var(--surface2);color:var(--txt)}
+.btn-outline-inv{background:transparent;color:#F7F4EF;border-color:rgba(247,244,239,.3)}
+.btn-outline-inv:hover{background:rgba(247,244,239,.1)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-icon{padding:6px 8px;font-size:14px}
+.btn-danger{background:var(--red-bg);color:var(--red);border-color:#E8BABA}
+.btn-danger:hover{background:#F7D0D0}
+.btn-success{background:var(--green-bg);color:var(--green);border-color:#C0DDA0}
+.btn-success:hover{background:#D8EDBC}
+
+/* ── TABS ── */
+.tabs{
+  display:flex;gap:0;
+  border-bottom:1px solid var(--border);
+  padding:0 1.5rem;
+  background:var(--surface);
+}
+.tab-btn{
+  font-family:'DM Sans',sans-serif;
+  font-size:13px;font-weight:500;
+  padding:12px 20px;
+  border:none;background:none;cursor:pointer;
+  color:var(--txt3);
+  border-bottom:2px solid transparent;
+  margin-bottom:-1px;
+  transition:all .15s;
+  letter-spacing:0.02em;
+}
+.tab-btn.active{color:var(--txt);border-bottom-color:var(--gold)}
+.tab-btn:hover{color:var(--txt2)}
+
+/* ── KPIs ── */
+.kpis{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:10px;padding:1.25rem 1.5rem;
+}
+.kpi{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--rl);
+  padding:1rem 1.25rem;
+  box-shadow:var(--shadow);
+}
+.kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--txt3);margin-bottom:6px;font-weight:500}
+.kpi-val{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;line-height:1}
+.kpi-val.accent{color:var(--gold)}
+.kpi-sub{font-size:11px;color:var(--txt3);margin-top:4px}
+
+/* ── FILTERS ── */
+.filters-bar{
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  padding:0.75rem 1.5rem;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+}
+.filters-bar input,.filters-bar select{
+  font-family:'DM Sans',sans-serif;
+  font-size:13px;
+  padding:7px 10px;
+  border:1px solid var(--border2);
+  border-radius:var(--r);
+  background:var(--bg);
+  color:var(--txt);
+  outline:none;
+  transition:border-color .15s;
+}
+.filters-bar input:focus,.filters-bar select:focus{border-color:var(--gold)}
+.f-search{flex:1;min-width:180px}
+.filters-bar select{min-width:130px}
+.filter-divider{width:1px;height:24px;background:var(--border);margin:0 4px}
+
+/* ── TABLE ── */
+.table-wrap{padding:1rem 1.5rem;overflow-x:auto}
+.table-wrap table{
+  width:100%;border-collapse:collapse;
+  font-size:13px;min-width:800px;
+}
+thead th{
+  font-size:10px;font-weight:500;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--txt3);
+  border-bottom:1px solid var(--border);
+  padding:8px 10px;text-align:left;
+  white-space:nowrap;cursor:pointer;user-select:none;
+}
+thead th:hover{color:var(--txt2)}
+thead th.sorted{color:var(--gold)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:hover{background:var(--surface2)}
+td{padding:10px 10px;vertical-align:middle}
+.td-nowrap{white-space:nowrap}
+.cod-badge{
+  font-size:11px;font-weight:500;
+  color:var(--gold);letter-spacing:0.05em;
+  background:var(--gold-bg);
+  padding:2px 7px;border-radius:99px;
+  border:1px solid #EDD88A;
+  white-space:nowrap;
+}
+.nombre-cell{
+  font-family:'Cormorant Garamond',serif;
+  font-size:15px;font-weight:600;
+}
+.thumb{
+  width:44px;height:44px;
+  border-radius:var(--r);
+  object-fit:cover;
+  border:1px solid var(--border);
+  background:var(--surface2);
+  display:block;
+  cursor:pointer;
+  transition:transform .15s;
+}
+.thumb:hover{transform:scale(1.1)}
+.no-thumb{
+  width:44px;height:44px;
+  border-radius:var(--r);
+  background:var(--surface2);
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:var(--txt3);
+}
+.precio-ars{font-weight:500}
+.precio-usd{color:var(--txt3);font-size:12px}
+.margen-cell{font-weight:500;font-size:12px}
+
+.pill{
+  display:inline-block;padding:3px 9px;border-radius:99px;
+  font-size:11px;font-weight:500;letter-spacing:0.03em;white-space:nowrap;
+}
+.pill-disp{background:var(--green-bg);color:var(--green);border:1px solid #C0DDA0}
+.pill-res{background:var(--amber-bg);color:var(--amber);border:1px solid #F5C97A}
+.pill-vend{background:var(--blue-bg);color:var(--blue);border:1px solid #A8C4E8}
+.pill-trans{background:#F0EAFB;color:#4A2D88;border:1px solid #C9B4EE}
+
+.act-wrap{display:flex;gap:4px;align-items:center}
+.btn-tbl{
+  font-family:'DM Sans',sans-serif;
+  font-size:11px;font-weight:500;
+  padding:4px 9px;border-radius:var(--r);
+  border:1px solid var(--border2);
+  background:none;color:var(--txt2);cursor:pointer;
+  transition:all .12s;white-space:nowrap;
+}
+.btn-tbl:hover{background:var(--surface2);color:var(--txt)}
+.btn-tbl.del:hover{background:var(--red-bg);color:var(--red);border-color:#E8BABA}
+
+.empty{
+  text-align:center;padding:4rem 1rem;
+  color:var(--txt3);
+  font-family:'Cormorant Garamond',serif;
+  font-size:18px;font-style:italic;
+}
+
+/* ── FORM PANEL ── */
+.form-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(26,23,20,.5);
+  display:flex;align-items:flex-start;justify-content:flex-end;
+}
+.form-panel{
+  width:min(540px,100vw);
+  height:100vh;overflow-y:auto;
+  background:var(--surface);
+  box-shadow:-4px 0 20px rgba(0,0,0,.15);
+  display:flex;flex-direction:column;
+}
+.form-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.25rem 1.5rem;
+  border-bottom:1px solid var(--border);
+  background:var(--bg);
+  position:sticky;top:0;
+}
+.form-head h2{font-size:20px;font-weight:600}
+.form-body{padding:1.5rem;flex:1}
+.form-section{
+  font-size:10px;text-transform:uppercase;letter-spacing:0.12em;
+  color:var(--txt3);font-weight:500;
+  margin:1.25rem 0 0.75rem;
+  padding-bottom:6px;
+  border-bottom:1px solid var(--border);
+}
+.form-section:first-child{margin-top:0}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group label{
+  font-size:11px;text-transform:uppercase;letter-spacing:0.08em;
+  color:var(--txt3);font-weight:500;
+}
+.form-group input,
+.form-group select,
+.form-group textarea{
+  font-family:'DM Sans',sans-serif;
+  font-size:13px;
+  padding:8px 12px;
+  border:1px solid var(--border2);
+  border-radius:var(--r);
+  background:var(--bg);
+  color:var(--txt);
+  outline:none;
+  transition:border-color .15s;
+  width:100%;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus{border-color:var(--gold)}
+.form-group textarea{min-height:70px;resize:vertical}
+.form-footer{
+  padding:1rem 1.5rem;
+  border-top:1px solid var(--border);
+  display:flex;gap:8px;justify-content:flex-end;
+  background:var(--bg);
+  position:sticky;bottom:0;
+}
+.photo-preview{
+  width:100%;height:120px;
+  object-fit:cover;
+  border-radius:var(--r);
+  border:1px solid var(--border);
+  margin-top:8px;
+  display:none;
+}
+.margin-preview{
+  background:var(--gold-bg);
+  border:1px solid #EDD88A;
+  border-radius:var(--r);
+  padding:10px 14px;
+  margin-top:12px;
+  display:none;
+}
+.margin-preview .mp-label{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--txt3);margin-bottom:4px}
+.margin-preview .mp-val{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold)}
+.margin-preview .mp-detail{font-size:11px;color:var(--txt3);margin-top:2px}
+
+/* ── HISTORIAL ── */
+.hist-wrap{padding:1rem 1.5rem}
+.hist-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1rem;
+}
+.hist-kpis{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:10px;margin-bottom:1.25rem;
+}
+.hist-table table{width:100%;border-collapse:collapse;font-size:13px}
+.hist-table thead th{
+  font-size:10px;text-transform:uppercase;letter-spacing:0.1em;
+  color:var(--txt3);border-bottom:1px solid var(--border);
+  padding:8px 10px;text-align:left;font-weight:500;
+}
+.hist-table tbody tr{border-bottom:1px solid var(--border)}
+.hist-table tbody tr:hover{background:var(--surface2)}
+.hist-table td{padding:10px 10px;vertical-align:middle}
+.hist-table .card-venta{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--rl);
+  padding:1rem;margin-bottom:10px;
+  box-shadow:var(--shadow);
+}
+
+/* ── IMAGE LIGHTBOX ── */
+.lightbox{
+  position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,.85);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.lightbox img{max-width:90vw;max-height:90vh;border-radius:var(--r);box-shadow:0 0 40px rgba(0,0,0,.5)}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:24px;right:24px;z-index:400;
+  background:var(--txt);color:#F7F4EF;
+  padding:12px 20px;border-radius:var(--r);
+  font-size:13px;box-shadow:var(--shadow-md);
+  transform:translateY(80px);opacity:0;
+  transition:all .25s;pointer-events:none;
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:var(--green)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:700px){
+  .topbar{padding:.75rem 1rem}
+  .kpis{padding:.75rem 1rem;grid-template-columns:1fr 1fr}
+  .filters-bar{padding:.75rem 1rem}
+  .table-wrap{padding:.5rem .5rem}
+  .form-grid{grid-template-columns:1fr}
+  .hist-wrap{padding:.75rem 1rem}
+  .brand h1{font-size:18px}
+  .kpi-val{font-size:20px}
+  .btn-text-hide{display:none}
+}
+@media(max-width:480px){
+  .kpis{grid-template-columns:1fr 1fr}
+  .kpi{padding:.75rem}
+  .kpi-val{font-size:18px}
+  .topbar-actions .btn-text-hide{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="brand">
+    <h1>MERCER</h1>
+    <span class="brand-sub">Gestión de inventario</span>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-outline-inv btn-sm" onclick="exportCSV()">
+      ↓ <span class="btn-text-hide">Exportar CSV</span>
+    </button>
+    <button class="btn btn-primary btn-sm" onclick="openForm()">
+      + <span class="btn-text-hide">Agregar pieza</span>
+    </button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" data-tab="inventario" onclick="switchTab('inventario',this)">Inventario</button>
+  <button class="tab-btn" data-tab="historial" onclick="switchTab('historial',this)">Historial de ventas</button>
+</div>
+
+<!-- TAB: INVENTARIO -->
+<div id="tab-inventario">
+  <div class="kpis" id="kpis"></div>
+
+  <div class="filters-bar">
+    <input type="text" id="search" class="f-search" placeholder="Buscar nombre, código, origen...">
+    <select id="f-estado" onchange="renderInv()">
+      <option value="">Todos los estados</option>
+      <option>Disponible</option>
+      <option>Reservada</option>
+      <option>Vendida</option>
+      <option>En tránsito</option>
+    </select>
+    <select id="f-tipo" onchange="renderInv()">
+      <option value="">Todos los tipos</option>
+    </select>
+    <select id="f-origen" onchange="renderInv()">
+      <option value="">Todos los orígenes</option>
+    </select>
+    <div class="filter-divider"></div>
+    <select id="sort-by" onchange="renderInv()">
+      <option value="fecha">Más reciente</option>
+      <option value="nombre">Nombre A–Z</option>
+      <option value="precioARS-asc">Precio ↑</option>
+      <option value="precioARS-desc">Precio ↓</option>
+      <option value="margen-desc">Margen ↓</option>
+    </select>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:50px"></th>
+          <th style="width:85px">Código</th>
+          <th>Nombre</th>
+          <th style="width:100px">Tipo</th>
+          <th style="width:90px">Origen</th>
+          <th style="width:90px">Material</th>
+          <th style="width:80px">Medidas</th>
+          <th style="width:90px">Costo USD</th>
+          <th style="width:110px">Precio ARS</th>
+          <th style="width:70px">Margen</th>
+          <th style="width:95px">Estado</th>
+          <th style="width:100px">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="inv-empty" style="display:none">No hay piezas que coincidan con los filtros.</div>
+  </div>
+</div>
+
+<!-- TAB: HISTORIAL -->
+<div id="tab-historial" style="display:none">
+  <div class="hist-wrap">
+    <div class="hist-kpis" id="hist-kpis"></div>
+    <div class="hist-table" id="hist-table"></div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<!-- FORM OVERLAY -->
+<div class="form-overlay" id="form-overlay" style="display:none" onclick="handleOverlayClick(event)">
+  <div class="form-panel" id="form-panel">
+    <div class="form-head">
+      <h2 id="form-title">Nueva pieza</h2>
+      <button class="btn btn-outline btn-sm" onclick="closeForm()">Cerrar ✕</button>
+    </div>
+    <div class="form-body">
+      <input type="hidden" id="f-id">
+
+      <div class="form-section">Identificación</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Código *</label>
+          <input id="f-cod" placeholder="ALF-001" required>
+        </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="f-est" onchange="onEstadoChange()">
+            <option>Disponible</option>
+            <option>Reservada</option>
+            <option>Vendida</option>
+            <option>En tránsito</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Nombre *</label>
+          <input id="f-nom" placeholder="Tabriz Medallón">
+        </div>
+        <div class="form-group">
+          <label>Tipo / Categoría</label>
+          <input id="f-tipo" placeholder="Yute, Poly, Tencel, Kilim...">
+        </div>
+        <div class="form-group">
+          <label>Origen / País</label>
+          <input id="f-ori" placeholder="Persia, Turquía, India...">
+        </div>
+        <div class="form-group">
+          <label>Material</label>
+          <input id="f-mat" placeholder="Lana, Seda, Yute, Poly...">
+        </div>
+        <div class="form-group">
+          <label>Medidas</label>
+          <input id="f-dim" placeholder="2 x 3 m">
+        </div>
+      </div>
+
+      <div class="form-section">Precios</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Costo importación (USD)</label>
+          <input id="f-usd" type="number" min="0" placeholder="0" oninput="calcMargen()">
+        </div>
+        <div class="form-group">
+          <label>Precio de venta (ARS)</label>
+          <input id="f-ars" type="number" min="0" placeholder="0" oninput="calcMargen()">
+        </div>
+        <div class="form-group">
+          <label>Tipo de cambio USD→ARS</label>
+          <input id="f-tc" type="number" min="0" placeholder="1300" value="" oninput="calcMargen()">
+        </div>
+        <div class="form-group" id="precio-venta-real-group" style="display:none">
+          <label>Precio de venta real (ARS)</label>
+          <input id="f-ars-real" type="number" min="0" placeholder="0" oninput="calcMargen()">
+        </div>
+      </div>
+      <div class="margin-preview" id="margin-preview">
+        <div class="mp-label">Margen estimado</div>
+        <div class="mp-val" id="mp-val">-</div>
+        <div class="mp-detail" id="mp-detail"></div>
+      </div>
+
+      <div class="form-section">Foto</div>
+      <div class="form-group full">
+        <label>URL de imagen (pegar link de Drive, Web, WhatsApp Web...)</label>
+        <input id="f-foto" placeholder="https://..." oninput="previewPhoto()">
+        <img id="foto-preview" class="photo-preview" alt="Preview">
+      </div>
+      <div class="form-group full" style="margin-top:8px">
+        <label>O subir imagen desde el dispositivo</label>
+        <input type="file" id="f-foto-file" accept="image/*" onchange="handleFileUpload(this)" style="font-size:13px">
+      </div>
+
+      <div class="form-section">Notas</div>
+      <div class="form-group full">
+        <label>Observaciones / Detalles</label>
+        <textarea id="f-notas" placeholder="Nudo, certificado, proveedor, detalles especiales..."></textarea>
+      </div>
+
+    </div>
+    <div class="form-footer">
+      <button class="btn btn-outline" onclick="closeForm()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveForm()">Guardar pieza</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" style="display:none" onclick="closeLightbox()">
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const STORE='mercer_inv_v2';
+const HIST_STORE='mercer_hist_v1';
+const TC_STORE='mercer_tc_v1';
+
+let items=[],history=[],editId=null;
+
+function load(){
+  try{items=JSON.parse(localStorage.getItem(STORE)||'[]')}catch(e){items=[]}
+  try{history=JSON.parse(localStorage.getItem(HIST_STORE)||'[]')}catch(e){history=[]}
+  if(!items.length){items=seed();save()}
+}
+function save(){
+  localStorage.setItem(STORE,JSON.stringify(items));
+  localStorage.setItem(HIST_STORE,JSON.stringify(history));
+}
+function genId(){return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+
+function seed(){
+  return [
+    {id:genId(),codigo:'ALF-001',nombre:'Tabriz Medallón',tipo:'Kilim',origen:'Persia',material:'Lana/Seda',dimensiones:'2.5×3.5 m',costoUSD:1200,precioARS:6500000,tipoCambio:1200,estado:'Disponible',foto:'',notas:'Nudo 80k/m². Certificado incluido.',fechaAlta:new Date().toISOString()},
+    {id:genId(),codigo:'ALF-002',nombre:'Ispahan Floral',tipo:'Persa',origen:'Persia',material:'Seda pura',dimensiones:'2×3 m',costoUSD:2400,precioARS:13500000,tipoCambio:1200,estado:'Reservada',foto:'',notas:'Certificado de origen. Reservada hasta 20/05.',fechaAlta:new Date().toISOString()},
+    {id:genId(),codigo:'ALF-003',nombre:'Kazak Geométrico',tipo:'Kilim',origen:'Afganistán',material:'Lana',dimensiones:'1.8×2.5 m',costoUSD:680,precioARS:3200000,tipoCambio:1200,estado:'Disponible',foto:'',notas:'',fechaAlta:new Date().toISOString()},
+    {id:genId(),codigo:'ALF-004',nombre:'Oushak Vintage',tipo:'Anatolia',origen:'Turquía',material:'Lana',dimensiones:'3×4 m',costoUSD:950,precioARS:4800000,tipoCambio:1200,estado:'En tránsito',foto:'',notas:'Llegada estimada 15/05.',fechaAlta:new Date().toISOString()},
+    {id:genId(),codigo:'ALF-005',nombre:'Bergen Boucle',tipo:'Yute',origen:'India',material:'Yute natural',dimensiones:'2×3 m',costoUSD:320,precioARS:1850000,tipoCambio:1200,estado:'Disponible',foto:'',notas:'Colección Mercer Home.',fechaAlta:new Date().toISOString()},
+    {id:genId(),codigo:'ALF-006',nombre:'Khotan Seda',tipo:'Oriental',origen:'China',material:'Seda pura',dimensiones:'2×2.5 m',costoUSD:1850,precioARS:11000000,tipoCambio:1200,estado:'Disponible',foto:'',notas:'Pieza única. Alta rotación.',fechaAlta:new Date().toISOString()},
+  ]
+}
+
+/* ── FORMAT ── */
+const fARS=n=>'$\u202F'+Math.round(n).toLocaleString('es-AR');
+const fUSD=n=>'USD\u202F'+Math.round(n).toLocaleString('es-AR');
+const fPct=n=>n.toFixed(1)+'%';
+
+function calcMargenVal(costoUSD,precioARS,tc){
+  if(!costoUSD||!precioARS||!tc) return null;
+  const costoARS=costoUSD*tc;
+  const margen=((precioARS-costoARS)/precioARS)*100;
+  return {margen,costoARS,gananciaARS:precioARS-costoARS};
+}
+
+/* ── FILTERS + RENDER INVENTORY ── */
+function getFiltered(){
+  const q=(document.getElementById('search')||{}).value?.toLowerCase()||'';
+  const est=document.getElementById('f-estado')?.value||'';
+  const tipo=document.getElementById('f-tipo')?.value||'';
+  const ori=document.getElementById('f-origen')?.value||'';
+  const srt=document.getElementById('sort-by')?.value||'fecha';
+
+  let res=items.filter(it=>{
+    if(q&&!`${it.codigo} ${it.nombre} ${it.origen} ${it.tipo||''}`.toLowerCase().includes(q)) return false;
+    if(est&&it.estado!==est) return false;
+    if(tipo&&it.tipo!==tipo) return false;
+    if(ori&&it.origen!==ori) return false;
+    return true;
+  });
+
+  res.sort((a,b)=>{
+    if(srt==='nombre') return a.nombre.localeCompare(b.nombre);
+    if(srt==='precioARS-asc') return (a.precioARS||0)-(b.precioARS||0);
+    if(srt==='precioARS-desc') return (b.precioARS||0)-(a.precioARS||0);
+    if(srt==='margen-desc'){
+      const ma=calcMargenVal(a.costoUSD,a.precioARS,a.tipoCambio);
+      const mb=calcMargenVal(b.costoUSD,b.precioARS,b.tipoCambio);
+      return (mb?.margen||0)-(ma?.margen||0);
+    }
+    return new Date(b.fechaAlta||0)-new Date(a.fechaAlta||0);
+  });
+  return res;
+}
+
+function populateSelects(){
+  const tipos=[...new Set(items.map(i=>i.tipo).filter(Boolean))].sort();
+  const origenes=[...new Set(items.map(i=>i.origen).filter(Boolean))].sort();
+  const ft=document.getElementById('f-tipo');
+  const fo=document.getElementById('f-origen');
+  if(!ft||!fo) return;
+  const vt=ft.value,vo=fo.value;
+  ft.innerHTML='<option value="">Todos los tipos</option>'+tipos.map(t=>`<option${t===vt?' selected':''}>${t}</option>`).join('');
+  fo.innerHTML='<option value="">Todos los orígenes</option>'+origenes.map(o=>`<option${o===vo?' selected':''}>${o}</option>`).join('');
+}
+
+const PILL={
+  'Disponible':'pill pill-disp',
+  'Reservada':'pill pill-res',
+  'Vendida':'pill pill-vend',
+  'En tránsito':'pill pill-trans'
+};
+
+function renderKPIs(){
+  const total=items.length;
+  const disp=items.filter(i=>i.estado==='Disponible').length;
+  const res=items.filter(i=>i.estado==='Reservada').length;
+  const trans=items.filter(i=>i.estado==='En tránsito').length;
+  const costoStock=items.filter(i=>i.estado!=='Vendida').reduce((s,i)=>s+(i.costoUSD||0),0);
+  const valDisp=items.filter(i=>i.estado==='Disponible').reduce((s,i)=>s+(i.precioARS||0),0);
+  const margenes=items.filter(i=>i.estado==='Disponible'&&i.costoUSD&&i.precioARS&&i.tipoCambio)
+    .map(i=>calcMargenVal(i.costoUSD,i.precioARS,i.tipoCambio)?.margen||0);
+  const avgMargen=margenes.length?margenes.reduce((a,b)=>a+b,0)/margenes.length:0;
+
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Stock total</div><div class="kpi-val">${total}</div><div class="kpi-sub">piezas registradas</div></div>
+    <div class="kpi"><div class="kpi-label">Disponibles</div><div class="kpi-val accent">${disp}</div><div class="kpi-sub">${res} reservadas · ${trans} en tránsito</div></div>
+    <div class="kpi"><div class="kpi-label">Costo stock activo</div><div class="kpi-val">${fUSD(costoStock)}</div><div class="kpi-sub">importación total</div></div>
+    <div class="kpi"><div class="kpi-label">Valor venta disponibles</div><div class="kpi-val">${fARS(valDisp)}</div><div class="kpi-sub">precio de lista</div></div>
+    <div class="kpi"><div class="kpi-label">Margen promedio</div><div class="kpi-val accent">${fPct(avgMargen)}</div><div class="kpi-sub">sobre piezas disponibles</div></div>
+  `;
+}
+
+function renderInv(){
+  renderKPIs();
+  populateSelects();
+  const filtered=getFiltered();
+  const tbody=document.getElementById('tbody');
+  const empty=document.getElementById('inv-empty');
+  if(!filtered.length){tbody.innerHTML='';empty.style.display='block';return}
+  empty.style.display='none';
+  tbody.innerHTML=filtered.map(it=>{
+    const m=calcMargenVal(it.costoUSD,it.precioARS,it.tipoCambio);
+    const mStr=m?`<span style="color:${m.margen>=40?'var(--green)':m.margen>=20?'var(--amber)':'var(--red)'}">${fPct(m.margen)}</span>`:'-';
+    const thumb=it.foto
+      ?`<img class="thumb" src="${it.foto}" alt="" onclick="openLightbox('${it.foto.replace(/'/g,"\\'")}')">`
+      :`<div class="no-thumb">▦</div>`;
+    return `<tr>
+      <td>${thumb}</td>
+      <td class="td-nowrap"><span class="cod-badge">${it.codigo}</span></td>
+      <td><div class="nombre-cell">${it.nombre}</div><div style="font-size:11px;color:var(--txt3)">${it.tipo||''}</div></td>
+      <td style="color:var(--txt2)">${it.tipo||'-'}</td>
+      <td style="color:var(--txt2)">${it.origen||'-'}</td>
+      <td style="color:var(--txt2)">${it.material||'-'}</td>
+      <td class="td-nowrap" style="color:var(--txt2)">${it.dimensiones||'-'}</td>
+      <td class="precio-usd">${it.costoUSD?fUSD(it.costoUSD):'-'}</td>
+      <td class="precio-ars">${it.precioARS?fARS(it.precioARS):'-'}</td>
+      <td class="margen-cell">${mStr}</td>
+      <td><span class="${PILL[it.estado]||'pill'}">${it.estado}</span></td>
+      <td><div class="act-wrap">
+        <button class="btn-tbl" onclick="openForm('${it.id}')">Editar</button>
+        <button class="btn-tbl del" onclick="delItem('${it.id}')">✕</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── HISTORIAL ── */
+function renderHist(){
+  const totalVentas=history.reduce((s,h)=>s+(h.precioARS||0),0);
+  const totalGanancia=history.reduce((s,h)=>s+(h.gananciaARS||0),0);
+  const avgMargen=history.length?history.reduce((s,h)=>s+(h.margen||0),0)/history.length:0;
+  document.getElementById('hist-kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Piezas vendidas</div><div class="kpi-val accent">${history.length}</div></div>
+    <div class="kpi"><div class="kpi-label">Ingresos totales</div><div class="kpi-val">${fARS(totalVentas)}</div></div>
+    <div class="kpi"><div class="kpi-label">Ganancia total</div><div class="kpi-val">${fARS(totalGanancia)}</div><div class="kpi-sub">descontando costo USD</div></div>
+    <div class="kpi"><div class="kpi-label">Margen promedio</div><div class="kpi-val accent">${fPct(avgMargen)}</div></div>
+  `;
+  if(!history.length){
+    document.getElementById('hist-table').innerHTML=`<div class="empty">Aún no hay ventas registradas.</div>`;
+    return;
+  }
+  const sorted=[...history].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  document.getElementById('hist-table').innerHTML=`
+    <table>
+      <thead><tr>
+        <th>Fecha</th><th>Código</th><th>Nombre</th><th>Tipo</th>
+        <th>Costo USD</th><th>Precio venta ARS</th><th>Ganancia ARS</th><th>Margen</th>
+      </tr></thead>
+      <tbody>${sorted.map(h=>`<tr>
+        <td class="td-nowrap" style="color:var(--txt3)">${new Date(h.fecha).toLocaleDateString('es-AR')}</td>
+        <td><span class="cod-badge">${h.codigo}</span></td>
+        <td><span class="nombre-cell">${h.nombre}</span></td>
+        <td style="color:var(--txt2)">${h.tipo||'-'}</td>
+        <td class="precio-usd">${h.costoUSD?fUSD(h.costoUSD):'-'}</td>
+        <td class="precio-ars">${h.precioARS?fARS(h.precioARS):'-'}</td>
+        <td style="color:var(--green);font-weight:500">${h.gananciaARS?fARS(h.gananciaARS):'-'}</td>
+        <td><span style="color:${(h.margen||0)>=40?'var(--green)':(h.margen||0)>=20?'var(--amber)':'var(--red)'}; font-weight:500">${h.margen?fPct(h.margen):'-'}</span></td>
+      </tr>`).join('')}</tbody>
+    </table>
+  `;
+}
+
+/* ── TABS ── */
+function switchTab(id,el){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-inventario').style.display=id==='inventario'?'':'none';
+  document.getElementById('tab-historial').style.display=id==='historial'?'':'none';
+  if(id==='historial') renderHist();
+}
+
+/* ── FORM ── */
+function openForm(id=null){
+  editId=id||null;
+  const it=id?items.find(i=>i.id===id):null;
+  document.getElementById('form-title').textContent=it?'Editar pieza':'Nueva pieza';
+  document.getElementById('f-id').value=it?.id||'';
+  document.getElementById('f-cod').value=it?.codigo||'';
+  document.getElementById('f-nom').value=it?.nombre||'';
+  document.getElementById('f-tipo').value=it?.tipo||'';
+  document.getElementById('f-ori').value=it?.origen||'';
+  document.getElementById('f-mat').value=it?.material||'';
+  document.getElementById('f-dim').value=it?.dimensiones||'';
+  document.getElementById('f-usd').value=it?.costoUSD||'';
+  document.getElementById('f-ars').value=it?.precioARS||'';
+  document.getElementById('f-tc').value=it?.tipoCambio||1300;
+  document.getElementById('f-ars-real').value=it?.precioVentaReal||'';
+  document.getElementById('f-est').value=it?.estado||'Disponible';
+  document.getElementById('f-foto').value=it?.foto||'';
+  document.getElementById('f-notas').value=it?.notas||'';
+  onEstadoChange();
+  previewPhoto();
+  calcMargen();
+  document.getElementById('form-overlay').style.display='flex';
+  document.body.style.overflow='hidden';
+  document.getElementById('f-cod').focus();
+}
+function closeForm(){
+  document.getElementById('form-overlay').style.display='none';
+  document.body.style.overflow='';
+  editId=null;
+}
+function handleOverlayClick(e){
+  if(e.target===document.getElementById('form-overlay')) closeForm();
+}
+function onEstadoChange(){
+  const vend=document.getElementById('f-est').value==='Vendida';
+  document.getElementById('precio-venta-real-group').style.display=vend?'':'none';
+}
+function previewPhoto(){
+  const url=document.getElementById('f-foto').value.trim();
+  const img=document.getElementById('foto-preview');
+  if(url){img.src=url;img.style.display='block'}else{img.style.display='none'}
+}
+function handleFileUpload(input){
+  if(!input.files||!input.files[0]) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    document.getElementById('f-foto').value=e.target.result;
+    previewPhoto();
+  };
+  r.readAsDataURL(input.files[0]);
+}
+function calcMargen(){
+  const usd=parseFloat(document.getElementById('f-usd').value)||0;
+  const ars=parseFloat(document.getElementById('f-ars').value)||0;
+  const tc=parseFloat(document.getElementById('f-tc').value)||0;
+  const prev=document.getElementById('margin-preview');
+  if(usd&&ars&&tc){
+    const m=calcMargenVal(usd,ars,tc);
+    document.getElementById('mp-val').textContent=fPct(m.margen);
+    document.getElementById('mp-detail').textContent=`Costo ARS: ${fARS(m.costoARS)} · Ganancia: ${fARS(m.gananciaARS)}`;
+    prev.style.display='block';
+  } else {
+    prev.style.display='none';
+  }
+}
+function saveForm(){
+  const cod=document.getElementById('f-cod').value.trim();
+  const nom=document.getElementById('f-nom').value.trim();
+  if(!cod||!nom){toast('Código y nombre son obligatorios','');return}
+  const estado=document.getElementById('f-est').value;
+  const costoUSD=parseFloat(document.getElementById('f-usd').value)||0;
+  const precioARS=parseFloat(document.getElementById('f-ars').value)||0;
+  const tipoCambio=parseFloat(document.getElementById('f-tc').value)||0;
+  const precioVentaReal=parseFloat(document.getElementById('f-ars-real').value)||0;
+  const m=calcMargenVal(costoUSD,precioARS,tipoCambio);
+
+  const obj={
+    id:editId||genId(),
+    codigo:cod,nombre:nom,
+    tipo:document.getElementById('f-tipo').value.trim(),
+    origen:document.getElementById('f-ori').value.trim(),
+    material:document.getElementById('f-mat').value.trim(),
+    dimensiones:document.getElementById('f-dim').value.trim(),
+    costoUSD,precioARS,tipoCambio,precioVentaReal,
+    estado,
+    foto:document.getElementById('f-foto').value.trim(),
+    notas:document.getElementById('f-notas').value.trim(),
+    fechaAlta:editId?(items.find(i=>i.id===editId)?.fechaAlta||new Date().toISOString()):new Date().toISOString(),
+  };
+
+  if(estado==='Vendida' && !history.find(h=>h.id===obj.id)){
+    history.push({
+      id:obj.id,
+      codigo:obj.codigo,nombre:obj.nombre,tipo:obj.tipo,
+      costoUSD:obj.costoUSD,
+      precioARS:precioVentaReal||obj.precioARS,
+      gananciaARS:m?m.gananciaARS:0,
+      margen:m?m.margen:0,
+      fecha:new Date().toISOString(),
+    });
+  }
+  if(editId){const idx=items.findIndex(i=>i.id===editId);items[idx]=obj}
+  else{items.unshift(obj)}
+  save();
+  closeForm();
+  renderInv();
+  toast('Pieza guardada correctamente','success');
+}
+function delItem(id){
+  const it=items.find(i=>i.id===id);
+  if(!it||!confirm(`¿Eliminar "${it.nombre}"? Esta acción no se puede deshacer.`)) return;
+  items=items.filter(i=>i.id!==id);
+  save();renderInv();
+  toast('Pieza eliminada');
+}
+
+/* ── CSV EXPORT ── */
+function exportCSV(){
+  const headers=['Código','Nombre','Tipo','Origen','Material','Medidas','Costo USD','Precio ARS','Tipo Cambio','Margen %','Estado','Notas','Fecha alta'];
+  const rows=items.map(it=>{
+    const m=calcMargenVal(it.costoUSD,it.precioARS,it.tipoCambio);
+    return [
+      it.codigo,it.nombre,it.tipo||'',it.origen||'',it.material||'',it.dimensiones||'',
+      it.costoUSD||'',it.precioARS||'',it.tipoCambio||'',
+      m?m.margen.toFixed(1):'',
+      it.estado,it.notas||'',
+      it.fechaAlta?new Date(it.fechaAlta).toLocaleDateString('es-AR'):''
+    ].map(v=>'"'+String(v).replace(/"/g,'""')+'"');
+  });
+  const csv=[headers.join(','),...rows.map(r=>r.join(','))].join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`mercer-inventario-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast('CSV exportado','success');
+}
+
+/* ── LIGHTBOX ── */
+function openLightbox(src){
+  document.getElementById('lightbox-img').src=src;
+  document.getElementById('lightbox').style.display='flex';
+}
+function closeLightbox(){document.getElementById('lightbox').style.display='none'}
+
+/* ── TOAST ── */
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast '+(type==='success'?'success':'');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+/* ── SEARCH LIVE ── */
+document.addEventListener('DOMContentLoaded',()=>{
+  load();renderInv();
+  document.getElementById('search').addEventListener('input',renderInv);
+});
+</script>
+</body>
+</html>
